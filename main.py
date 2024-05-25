@@ -31,18 +31,16 @@ async def llm_completion(context: str,is_conv_finished: bool):
 
 @app.get("/llm_clone/")
 async def llm_clone_conversation_generator(request: Request):
-    # personality_prompt  = read_personnality_prompt(personality_prompt_filename)
-    data = await request.json()
-    
-    context = data['context']
+    # data = await request.json()
+    # context = data['context']
 
-    for _ in range(10):
-        #ping pong
-        print("ping")
-        print("pong")
+
+    personality_prompt  = read_personnality_prompt(personality_prompt_filename)
+
+    
         
     try:
-        result = call_mistral_llm_clone_generate_conversation(context)
+        result = generate_LLM_to_LLM_conversation(context)
         return result
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -64,7 +62,23 @@ def call_mistral_llm_completion(prompt: str):
     return chat_response
 
 
-def call_mistral_llm_clone_generate_conversation(prompt: str):
+def gen_prompt_from_llm_user_conversation(filepath : str): 
+    # read the conversation file created in save_conversation and create a prompt based on LLM
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f'Conversation file {filepath} not found.')
+    
+    with open(filepath, "r") as f: 
+        conversation = f.read()
+    
+
+
+
+    # prompt = (f"I want you to act like the user and imitate the way they are speaking.", 
+    #           f"You can find a lot of information about the person here: {conversation}")
+    return prompt
+
+
+def generate_LLM_to_LLM_conversation(prompt: str):
     api_key = os.environ["MISTRAL_API_KEY"]
     model = "mistral-large-latest"
     client = MistralClient(api_key=api_key)
@@ -77,17 +91,6 @@ def call_mistral_llm_clone_generate_conversation(prompt: str):
     return conversation
 
 
-def prompt_generator(filepath : str): 
-    # read the conversation file created in save_conversation and create a prompt based on LLM
-    if not os.path.exists(filepath):
-        raise FileNotFoundError(f'Conversation file {filepath} not found.')
-    
-    with open(filepath, "r") as f: 
-        conversation = f.read()
-
-    prompt = (f"I want you to act like the user and imitate the way they are speaking.", 
-              f"You can find a lot of information about the person here: {conversation}")
-    return prompt
 
 ################# Save conversation ####################
 
