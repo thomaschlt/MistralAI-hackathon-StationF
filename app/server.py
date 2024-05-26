@@ -37,6 +37,7 @@ async def llm_completion(last_user_message: str,is_conv_finished: bool):
 async def llm_clone_conversation_generator(request: Request):
     body = await request.json()
     conversation = body["conversation"]
+    print("convo")
     print(conversation)
     
     # personality_prompt  = read_personnality_prompt(conversation)
@@ -98,14 +99,14 @@ def generate_LLM_to_LLM_conversation(prompt: str):
 
 ################# Save conversation ####################
 
-def save_conversation(conversation: str):
+def save_conversation(conversation :list):
     """
     TODO: maybe go w/ a JSON later
     """ 
     current_time = datetime.datetime.now()
     filename = current_time.strftime("%Y%m%d-%H%M%S") + ".txt"
     with open(filename, 'w') as file:
-        file.write(conversation)
+        file.write(str(conversation))
     return filename
 
 def read_conversation(filename: str): 
