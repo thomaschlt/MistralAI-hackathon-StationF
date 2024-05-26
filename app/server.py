@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 
 import requests
 import os
@@ -6,6 +6,7 @@ import datetime
 import os
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
+from .llm_psycho import LlmPsycho
 
 app = FastAPI() 
 
@@ -33,7 +34,6 @@ async def llm_completion(context: str,is_conv_finished: bool):
 async def llm_clone_conversation_generator(request: Request):
     # data = await request.json()
     # context = data['context']
-
 
     personality_prompt  = read_personnality_prompt(personality_prompt_filename)
 
@@ -118,3 +118,31 @@ def save_prompt_perso(prompt: str):
 def read_personnality_prompt(filename: str):
     with open(filename, 'r') as f:
         return f.read()
+
+################# Put LLM psycho in server #################
+
+@app.websocket("/llm-websocket/{call_id}")
+async def websocket_handler(websocket: WebSocket, call_id: str): 
+    await websocket.accept()
+    llm_psycho = LlmPsycho()
+    try: 
+         while True: 
+             data = await websocket.receive_text()
+             context = data["context"]
+             initial_discussion = data["initial_discussion"]
+             characteristics = data["characteristics"]
+             prompt = data["prompt"]
+
+             response = await llm_psycho.init_prompt(
+                 conversation= context, 
+                 initial_discussion=initial_discussion, 
+                 characteristics=characteristics, 
+                 prompt=prompt
+             )
+
+             await websocket.send_text(response)
+    except WebSocketDisconnect: 
+        print(f"Client {call_id} disconnected")
+    except Exception as e: 
+        await websocket.close()
+        print(f"Error: {e}")
