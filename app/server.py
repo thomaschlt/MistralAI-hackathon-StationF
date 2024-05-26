@@ -7,11 +7,15 @@ import os
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 from llm_client import LlmClient
+import re
+import json
+import ast
+
 app = FastAPI() 
 
 personality_prompt_filename = None
 llm_client = LlmClient()
-
+filename = None
 
 
 
@@ -40,17 +44,34 @@ async def llm_clone_conversation_generator(request: Request):
     print("convo")
     print(conversation)
     
+    corrected_string = re.sub(r'(\b\w+\b):', r'"\1":', conversation)
+    corrected_string = re.sub(r'{"role": ([^\}]+), "content":', r'{"role": "\1", "content":', corrected_string)
+    corrected_string = re.sub(r'"content": ([^\}]+)}', r'"content": "\1"}', corrected_string)
+
+
+    # Parse the corrected string as a Python literal
+    list_of_dicts = ast.literal_eval(corrected_string)
+    print("list of dicts")
+    # # Verify the result
+    print(list_of_dicts)
+    print(type(list_of_dicts))
+
+    # Verify the result
+    print(list_of_dicts)
     # personality_prompt  = read_personnality_prompt(conversation)
 
-    prompt = llm_client.gen_prompt_from_llm_user_conversation(conversation)
+    prompt = llm_client.gen_prompt_from_llm_user_conversation(list_of_dicts)
     print(prompt)
 
     conversation = llm_client.gen_LLM_to_LLM_conversation()
     # Save conversation
-    save_conversation(conversation)
+    global filename
+    filename = save_conversation(conversation)
+
 
 @app.get("/get_chats/")
-async def collect_chats(filename: str):
+async def collect_chats():
+    filename = "20240526-093613.txt"
     try: 
         conversation = read_conversation(filename)
         return conversation 
@@ -110,7 +131,7 @@ def save_conversation(conversation :list):
     return filename
 
 def read_conversation(filename: str): 
-    with open(filename, 'w') as file: 
+    with open(filename, 'r') as file: 
         conversation = file.read()
     return conversation
 

@@ -86,7 +86,6 @@ class LlmClient:
                 context1.append({"role": "user", "content": new_content})
                 context2.append({"role": "assistant", "content": new_content})
                 last_user = "user2"
-
         return context2
 
 
