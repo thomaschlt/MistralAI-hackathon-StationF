@@ -1,4 +1,4 @@
-from openai import AsyncOpenAI
+from openai import OpenAI
 import os
 from typing import List
 from dotenv import load_dotenv
@@ -10,25 +10,22 @@ init_chat_prompt = "What's your favorite way to spend a weekend?\nWhat kind of m
 
 class LlmClient: 
     def __init__(self):
-        self.client = AsyncOpenAI(
-            organization=openai_api_key,
-            api_key=openai_organization_key,
-        )
+        self.client = OpenAI()
         self.model = "gpt-3.5-turbo"
         self.context = [
             {"role": "system", "content": init_chat_prompt + "GIVE ONLY THE INFORMATION."}, 
-            {"role": "user", "content": "How you doing little cutey?"}
+            {"role": "assistant", "content":"Hello I am your psychologist. I am in charge to talk to you in order to learn more about you, your interests..."}
         ]
         self.cloning_prompt_1 = ""
         self.cloning_prompt_2 = "You are a really lovely and happy person that loves to know more about the people's lives. Your task is to ask whatever question you find is the most adapted to know someone in a few steps. You can get inspired by the ones provided below. GIVE ONLY SHORT ANSWERS.\nQuestions :\n" # this one was created before I guess
     
     def LLM_complete(self, user_message:str): 
-
-        chat_response = self.client.chat_completions.create(
+        self.context.append({"role": "user", "content": user_message})
+        chat_response = self.client.chat.completions.create(
                     model=self.model,
                     messages=self.context
                 )
-        message = chat_response.choices[0].message.content
+        message = chat_response.choices[0].message
         self.context.append(message)
 
         return message
@@ -58,7 +55,7 @@ class LlmClient:
         return prompt
 
 
-    async def gen_promp_from_llm_uuser_conversation(self, conversation: str):
+    def gen_LLM_to_LLM_conversation(self):
         context1 = [
         {"role": "system", "content":self.cloning_prompt_1},
         {"role": "user", "content": "How you doing little cutey?"}]

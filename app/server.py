@@ -6,52 +6,53 @@ import datetime
 import os
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
-from .llm_client import LlmPsycho
-import app.llm_client as llm_client
+from llm_client import LlmClient
 app = FastAPI() 
 
 personality_prompt_filename = None
-LLM_Client = llm_client
+llm_client = LlmClient()
+
 
 
 
 @app.get("/llm_completion/")
-async def llm_completion(context: str,is_conv_finished: bool):
+async def llm_completion(last_user_message: str,is_conv_finished: bool):
     if is_conv_finished : # save all the conversation between the LLM and the user in a file
-        filename = save_conversation(context)
-        personnality_prompt = prompt_generator(filename)
-        global personality_prompt_filename
-        personality_prompt_filename = save_prompt_perso(personnality_prompt) # how to save the name fro use in the L
-
+        
+        filename = save_conversation(llm_client.context)
+        personnality_prompt = llm_client.gen_prompt_from_llm_user_conversation(filename)
+        # global personality_prompt_filename
+        # personality_prompt_filename = save_prompt_perso(personnality_prompt) # how to save the name fro use in the L
 
     else : # generate a response to the speech of the user 
         try:
-            result = call_mistral_llm_completion(context)
+            result = llm_client.LLM_complete(last_user_message)
             return result
         except requests.RequestException as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-
-
 @app.get("/llm_clone/")
 async def llm_clone_conversation_generator(request: Request):
-    # data = await request.json()
-    # context = data['context']
-
-    personality_prompt  = read_personnality_prompt(personality_prompt_filename)
-
+    body = await request.json()
+    conversation = body["conversation"]
+    print(conversation)
     
-        
-    try:
-        result = generate_LLM_to_LLM_conversation(context)
-        return result
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # personality_prompt  = read_personnality_prompt(conversation)
+
+    prompt = llm_client.gen_prompt_from_llm_user_conversation(conversation)
+    print(prompt)
+
+    conversation = llm_client.gen_LLM_to_LLM_conversation()
+    print(conversation)
+    # try:
+    #     result = generate_LLM_to_LLM_conversation(context)
+    #     return result
+    # except requests.RequestException as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 
 
 ################# UTILS ####################
-
 
 def call_mistral_llm_completion(prompt: str):
     api_key = os.environ["MISTRAL_API_KEY"]
