@@ -31,7 +31,9 @@ async def llm_completion(last_user_message: str,is_conv_finished: bool):
         except requests.RequestException as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/llm_clone/")
+
+
+@app.post("/send_convo/")
 async def llm_clone_conversation_generator(request: Request):
     body = await request.json()
     conversation = body["conversation"]
@@ -43,14 +45,16 @@ async def llm_clone_conversation_generator(request: Request):
     print(prompt)
 
     conversation = llm_client.gen_LLM_to_LLM_conversation()
-    print(conversation)
-    # try:
-    #     result = generate_LLM_to_LLM_conversation(context)
-    #     return result
-    # except requests.RequestException as e:
-    #     raise HTTPException(status_code=500, detail=str(e))
+    # Save conversation
+    save_conversation(conversation)
 
-
+@app.get("/get_chats/")
+async def collect_chats(filename: str):
+    try: 
+        conversation = read_conversation(filename)
+        return conversation 
+    except FileNotFoundError as e: 
+        raise HTTPException(status_code=400, detail=str(e))
 
 ################# UTILS ####################
 
@@ -66,20 +70,17 @@ def call_mistral_llm_completion(prompt: str):
     return chat_response
 
 
-def gen_prompt_from_llm_user_conversation(filepath : str): 
-    # read the conversation file created in save_conversation and create a prompt based on LLM
-    if not os.path.exists(filepath):
-        raise FileNotFoundError(f'Conversation file {filepath} not found.')
+# def gen_prompt_from_llm_user_conversation(filepath : str): 
+#     # read the conversation file created in save_conversation and create a prompt based on LLM
+#     if not os.path.exists(filepath):
+#         raise FileNotFoundError(f'Conversation file {filepath} not found.')
     
-    with open(filepath, "r") as f: 
-        conversation = f.read()
-    
+#     with open(filepath, "r") as f: 
+#         conversation = f.read()
 
-
-
-    # prompt = (f"I want you to act like the user and imitate the way they are speaking.", 
-    #           f"You can find a lot of information about the person here: {conversation}")
-    return prompt
+#     prompt = (f"I want you to act like the user and imitate the way they are speaking.", 
+#     #           f"You can find a lot of information about the person here: {conversation}")
+#     return prompt
 
 
 def generate_LLM_to_LLM_conversation(prompt: str):
@@ -95,7 +96,6 @@ def generate_LLM_to_LLM_conversation(prompt: str):
     return conversation
 
 
-
 ################# Save conversation ####################
 
 def save_conversation(conversation: str):
@@ -107,6 +107,11 @@ def save_conversation(conversation: str):
     with open(filename, 'w') as file:
         file.write(conversation)
     return filename
+
+def read_conversation(filename: str): 
+    with open(filename, 'w') as file: 
+        conversation = file.read()
+    return conversation
 
 def save_prompt_perso(prompt: str):
     """
@@ -128,7 +133,7 @@ def read_personnality_prompt(filename: str):
 @app.websocket("/llm-websocket/{call_id}")
 async def websocket_handler(websocket: WebSocket, call_id: str): 
     await websocket.accept()
-    llm_psycho = LlmPsycho()
+    llm_psycho = LlmClient()
     try: 
          while True: 
              data = await websocket.receive_text()
@@ -150,3 +155,25 @@ async def websocket_handler(websocket: WebSocket, call_id: str):
     except Exception as e: 
         await websocket.close()
         print(f"Error: {e}")
+
+
+
+
+# @app.get("/llm_clone/")
+# async def llm_clone_conversation_generator(request: Request):
+#     body = await request.json()
+#     conversation = body["conversation"]
+#     print(conversation)
+    
+#     # personality_prompt  = read_personnality_prompt(conversation)
+
+#     prompt = llm_client.gen_prompt_from_llm_user_conversation(conversation)
+#     print(prompt)
+
+#     conversation = llm_client.gen_LLM_to_LLM_conversation()
+#     print(conversation)
+#     # try:
+#     #     result = generate_LLM_to_LLM_conversation(context)
+#     #     return result
+#     # except requests.RequestException as e:
+#     #     raise HTTPException(status_code=500, detail=str(e))
