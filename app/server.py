@@ -6,11 +6,14 @@ import datetime
 import os
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
-from .llm_psycho import LlmPsycho
-
+from .llm_client import LlmPsycho
+import app.llm_client as llm_client
 app = FastAPI() 
 
 personality_prompt_filename = None
+LLM_Client = llm_client
+
+
 
 @app.get("/llm_completion/")
 async def llm_completion(context: str,is_conv_finished: bool):
